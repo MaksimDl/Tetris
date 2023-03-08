@@ -2,12 +2,13 @@ import tkinter as tk
 from tkinter import Label
 from tkinter import *
 from PIL import ImageTk, Image
+import copy
 import keyboard
 
 sizeM = 1000  # size of window
 sizeN = 1000  # size of window
 field_size_m = 20  # num of cells
-field_size_n = 20  # num of cells
+field_size_n = 10  # num of cells
 path_empty = "20.png"  # empty cell
 path_filled = "20f.png"  # busy cell
 x = 0  # position of begin cell of figure
@@ -23,33 +24,55 @@ image_empty = ImageTk.PhotoImage(Image.open(path_empty))
 image_filled = ImageTk.PhotoImage(Image.open(path_filled))
 
 
+def go_rotate():
+    print("Let's rotate!")
+    global figure
+    temp = figure.copy()
+
+    for i in range(0, 4):
+        for j in range(0, 4):
+            print(figure[j][i], end=" ")
+            #temp[i][j] = figure[j][i]
+        print()
+    print()
+    print()
+    temp[0][0] = 2
+    for i1 in range(0, 4):
+        for j1 in range(0, 4):
+            print(figure[j1][i1], end=" ")
+        print()
+    print(figure)
+    print(temp)
+
+
 def go_down():
     # check if can add!
     global x
     global y
     print_fig_over_field(1)  # remove figure in previous position before mooving
     x += 1
-    #if check_out_of_border():   # reach the bottom need stack the figure
-
-
-    if check_for_crash_fig() == 1:
-        print_fig_over_field(0)
-    else:
-        x -= 1  # go to prev x, where fig didn't crash and stack it!
-        # stack_the_figure And reWrite the field! (our figure is already erased)
+    if check_out_of_border() == 1 or check_for_crash_fig() == 1:
+        # reach the bottom. stack the figure
+        # or reach already stacked figure
+        x -= 1
+        stack_the_figure()
         print("got to the finish")
+        print_fig_over_field(0)  # remove it after stack
+    else:
+        print_fig_over_field(0)
 
 
-def go_up():  # for testing puprposes only -  wil not go in future
+def go_up():  # for testing puprposes only -  wil not go in future. not checking!
     # check if can add!
     global x
     global y
     print_fig_over_field(1)  # remove figure in previous position before mooving
     x -= 1
-    if check_for_crash_fig() == 1:
+    if check_out_of_border() == 0:
         print_fig_over_field(0)
     else:
         x += 1  # go to prev x, where fig didn't crash and finish
+        print_fig_over_field(0)
         # stack_the_figure And reWrite the field! (our figure is already erased)
         print("got to the topline!")
 
@@ -60,10 +83,11 @@ def go_right():
     global y
     print_fig_over_field(1)  # remove figure in previous position before mooving
     y += 1
-    if check_for_crash_fig() == 1:
+    if check_out_of_border() == 0 and check_for_crash_fig() == 0:
         print_fig_over_field(0)
     else:
         y -= 1  # go to prev x, where fig didn't crash and finish
+        print_fig_over_field(0)
         # stack_the_figure And reWrite the field! (our figure is already erased)
         print("got to the right line!")
 
@@ -74,10 +98,11 @@ def go_left():
     global y
     print_fig_over_field(1)  # remove figure in previous position before mooving
     y -= 1
-    if check_for_crash_fig() == 1:
+    if check_out_of_border() == 0 and check_for_crash_fig() == 0:
         print_fig_over_field(0)
     else:
         y += 1  # go to prev x, where fig didn't crash and finish
+        print_fig_over_field(0)
         # stack_the_figure And reWrite the field! (our figure is already erased)
         print("got to the left  line!")
 
@@ -96,6 +121,9 @@ def com(event):
     if event.keysym == "Right":
         print("Right!")
         go_right()
+    if event.keysym == "space":
+        print("Space!")
+        go_rotate()
     # left right down and up!
 
 
@@ -124,15 +152,15 @@ def check_out_of_border():
     # x, y figure[3][3]
     # if x + 4 < field_size_m
 
+    if x < 0 or y < 0:
+        return 1
     for i in range(0, 4):
         for j in range(0, 4):
-            if figure[i, j] == 1:
-                if x + i >= field_size_m and y + j > field_size_n:
+            if figure[i][j] == 1:
+                if x + i >= field_size_m or y + j >= field_size_n:
                     #  out of border (right or down)
                     return 1
-                if x + i < 0:
-                    # out of border - left
-                    return 1
+
     return 0
 
 
@@ -141,9 +169,9 @@ def check_for_crash_fig():
     for i in range(x, x + 4):
         for j in range(y, y + 4):
             if figure[i - x][j - y] == 1 and main_field[i][j] == 1:
-                return 0  # figure gets on any busy cell of field
+                return 1  # figure gets on any busy cell of field
     print("checked")
-    return 1  # everything OK
+    return 0  # everything OK
 
 
 def print_array_debug(in_array):
@@ -153,7 +181,7 @@ def print_array_debug(in_array):
         print()
 
 
-def print_array_to_window():
+def print_main_field_to_window():
     # print_array_debug(main_field)
 
     for i in range(0, field_size_m):
@@ -186,6 +214,16 @@ def print_fig_over_field(clear):
                     label.grid(row=x + (i - x), column=y + (j - y), ipadx=0, ipady=0, padx=0, pady=0)
 
 
+def stack_the_figure():
+    global main_field
+    for i in range(x, x + 4):
+        for j in range(y, y + 4):
+            if figure[i - x][j - y] == 1:
+                main_field[i][j] = 1
+    print_main_field_to_window()
+    get_figure()
+
+
 def end_game():
     print("yoo loose!")
     # print big picture! LOOSE
@@ -193,7 +231,7 @@ def end_game():
 
 # init main field where empty and stacked cells will be stored. MxN size
 main_field = [0] * field_size_m
-for i in range(0, field_size_n):
+for i in range(0, field_size_m):
     main_field[i] = [0] * field_size_n
 
 # generate array for current figure(empty now). Supposed to be 4x4
@@ -208,7 +246,7 @@ for i in range(0, 4):
 
 # main_field[1][2] = 1
 
-print_array_to_window()
+print_main_field_to_window()
 
 get_figure()
 
