@@ -24,29 +24,78 @@ image_empty = ImageTk.PhotoImage(Image.open(path_empty))
 image_filled = ImageTk.PhotoImage(Image.open(path_filled))
 
 
+def figure_calibrate():
+    global figure
+    print_fig_over_field(1)
+    print("before calibrate: ", figure, x, y)
+
+    for times in range(0, 3):  # need to calibrate 3 times (remove 1 zero rows or cols at a time)
+        i = 0
+        while i < 3:
+            sum_row = 0
+            for j in range(0, 4):
+                sum_row += figure[i][j]
+            if sum_row == 0:
+                for j in range(0, 4):
+                    figure[i][j] = figure[i + 1][j]
+                    figure[i + 1][j] = 0
+            i += 1
+
+        j = 0
+        while j < 3:
+            sum_col = 0
+            for i in range(0, 4):
+                sum_col += figure[i][j]
+            if sum_col == 0:
+                for i in range(0, 4):
+                    figure[i][j] = figure[i][j + 1]
+                    figure[i][j + 1] = 0
+            j += 1
+
+    print("after calibrate cols", figure)
+    print_fig_over_field(0)
+
+
 def go_rotate():
+    global x
+    global Y
+    # check what will happen if figure will start not from [0][0] (fig[0][0] = 0)
+    # rewrite position (x, y)
     print("Let's rotate!")
     global figure
-    temp = figure.copy()
+    temp = copy.deepcopy(figure)
+    print("cur_figure_before_rotate", figure)
+    print_fig_over_field(1)  # erase current figure from screen
+
+    # print(figure)
 
     for i in range(0, 4):
         for j in range(0, 4):
-            print(figure[j][i], end=" ")
-            #temp[i][j] = figure[j][i]
+            print(figure[i][j], end=" ")
+            figure[i][j] = temp[3 - j][i]
         print()
     print()
     print()
-    temp[0][0] = 2
+
+    if check_out_of_border() == 1 or check_for_crash_fig() == 1:  # rotate didn't succeed
+        # can't rotate because will go out of field or out of main_array, or stack previously cells
+        # get rotate back
+        figure = copy.deepcopy(temp)
+        print("rotate back")
+        print_fig_over_field(0)  # print figure back to it's position
+    else:  # rotate succeed
+        print_fig_over_field(0)  # print rotated figure to screen
+
+    del (temp)
+    figure_calibrate()
+
     for i1 in range(0, 4):
         for j1 in range(0, 4):
-            print(figure[j1][i1], end=" ")
+            print(figure[i1][j1], end=" ")
         print()
-    print(figure)
-    print(temp)
 
 
 def go_down():
-    # check if can add!
     global x
     global y
     print_fig_over_field(1)  # remove figure in previous position before mooving
@@ -130,15 +179,27 @@ def com(event):
 def get_figure():  # here will be random generated several figures. for right now - one
     # fig = [[1, 1, 1], [0, 0, 1]]
     global figure
+    for i in range(0, 4):
+        for j in range(0, 4):
+            figure[i][j] = 0
+    """"
     figure[0][0] = 1
     figure[0][1] = 1
     figure[0][2] = 1
     figure[0][3] = 1
     figure[1][3] = 1
+    """
+    figure[1][0] = 0
+    figure[2][1] = 1
+    figure[2][2] = 1
+    figure[2][3] = 1
+    figure[3][3] = 1
     global x
     x = 0
     global y
     y = 0
+
+    figure_calibrate()
 
     # if appear already on busy field - game finishes!
     for i in range(x, x + 4):
@@ -149,9 +210,7 @@ def get_figure():  # here will be random generated several figures. for right no
 
 
 def check_out_of_border():
-    # x, y figure[3][3]
-    # if x + 4 < field_size_m
-
+    print("check border", x, y)
     if x < 0 or y < 0:
         return 1
     for i in range(0, 4):
@@ -165,12 +224,11 @@ def check_out_of_border():
 
 
 def check_for_crash_fig():
-    print("check (x,y)", x, y)
+    print("check crash (x,y)", x, y)
     for i in range(x, x + 4):
         for j in range(y, y + 4):
             if figure[i - x][j - y] == 1 and main_field[i][j] == 1:
                 return 1  # figure gets on any busy cell of field
-    print("checked")
     return 0  # everything OK
 
 
