@@ -24,9 +24,10 @@ image_empty = ImageTk.PhotoImage(Image.open(path_empty))
 image_filled = ImageTk.PhotoImage(Image.open(path_filled))
 
 
-def figure_calibrate():
+def figure_calibrate(flag_check=0):     # flag check = 1 if we are not sure will it fit (when we are calibrating only for test)
     global figure
-    print_fig_over_field(1)
+    if flag_check != 1:
+        print_fig_over_field(1)
     print("before calibrate: ", figure, x, y)
 
     for times in range(0, 3):  # need to calibrate 3 times (remove 1 zero rows or cols at a time)
@@ -53,7 +54,8 @@ def figure_calibrate():
             j += 1
 
     print("after calibrate cols", figure)
-    print_fig_over_field(0)
+    if flag_check != 1:
+        print_fig_over_field(0)
 
 
 def go_rotate():
@@ -76,7 +78,7 @@ def go_rotate():
         print()
     print()
     print()
-
+    figure_calibrate(1)
     if check_out_of_border() == 1 or check_for_crash_fig() == 1:  # rotate didn't succeed
         # can't rotate because will go out of field or out of main_array, or stack previously cells
         # get rotate back
@@ -86,8 +88,8 @@ def go_rotate():
     else:  # rotate succeed
         print_fig_over_field(0)  # print rotated figure to screen
 
-    del (temp)
-    figure_calibrate()
+    del temp
+
 
     for i1 in range(0, 4):
         for j1 in range(0, 4):
