@@ -3,16 +3,18 @@ from tkinter import Label
 from tkinter import *
 from PIL import ImageTk, Image
 import copy
+from random import randint
 import keyboard
 
 sizeM = 1000  # size of window
 sizeN = 1000  # size of window
-field_size_m = 20  # num of cells
-field_size_n = 10  # num of cells
+field_size_m = 30  # num of cells
+field_size_n = 15  # num of cells
 path_empty = "20.png"  # empty cell
 path_filled = "20f.png"  # busy cell
 x = 0  # position of begin cell of figure
 y = 0
+score = 0
 
 window = tk.Tk()
 window.title("Tetris Test")
@@ -24,7 +26,8 @@ image_empty = ImageTk.PhotoImage(Image.open(path_empty))
 image_filled = ImageTk.PhotoImage(Image.open(path_filled))
 
 
-def figure_calibrate(flag_check=0):     # flag check = 1 if we are not sure will it fit (when we are calibrating only for test)
+def figure_calibrate(
+        flag_check=0):  # flag check = 1 if we are not sure will it fit (when we are calibrating only for test)
     global figure
     if flag_check != 1:
         print_fig_over_field(1)
@@ -89,7 +92,6 @@ def go_rotate():
         print_fig_over_field(0)  # print rotated figure to screen
 
     del temp
-
 
     for i1 in range(0, 4):
         for j1 in range(0, 4):
@@ -181,21 +183,22 @@ def com(event):
 def get_figure():  # here will be random generated several figures. for right now - one
     # fig = [[1, 1, 1], [0, 0, 1]]
     global figure
+    # clear previous
     for i in range(0, 4):
         for j in range(0, 4):
             figure[i][j] = 0
-    """"
-    figure[0][0] = 1
-    figure[0][1] = 1
-    figure[0][2] = 1
-    figure[0][3] = 1
-    figure[1][3] = 1
-    """
-    figure[1][0] = 0
-    figure[2][1] = 1
-    figure[2][2] = 1
-    figure[2][3] = 1
-    figure[3][3] = 1
+    choosen = randint(0, 4)
+    if choosen == 0:
+        figure = [[1, 1, 1, 1], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    if choosen == 1:
+        figure = [[1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    if choosen == 2:
+        figure = [[1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]]
+    if choosen == 3:
+        figure = [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    if choosen == 4:
+        figure = [[1, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]]
+
     global x
     x = 0
     global y
@@ -255,6 +258,14 @@ def print_main_field_to_window():
                 label = Label()
                 label['image'] = image_filled
                 label.grid(row=i, column=j, ipadx=0, ipady=0, padx=0, pady=0)
+    label = Label()
+    label['text'] = "score"
+    label.grid(row=field_size_m + 3, column=0, columnspan=2)
+
+    label = Label()
+    label['text'] = score
+    label.grid(row=field_size_m + 3, column=2, columnspan=2)
+    # Label(root, text=’Grid’).grid(columnspan=2)
 
 
 def print_fig_over_field(clear):
@@ -280,8 +291,32 @@ def stack_the_figure():
         for j in range(y, y + 4):
             if figure[i - x][j - y] == 1:
                 main_field[i][j] = 1
-    print_main_field_to_window()
+    clear_full_lines()
     get_figure()
+
+
+def clear_full_lines():
+    global score
+    i = field_size_m - 1  # begin from end
+    while i > 0:
+        sum_cols = 0
+        for j in range(0, field_size_n):
+            sum_cols += main_field[i][j]
+        if sum_cols == field_size_n:
+            print("we got the full Line!!!")
+            score += sum_cols
+            # now start clearing the field
+            i1 = i
+            while i1 > 0:
+                for j1 in range(0, field_size_n):
+                    main_field[i1][j1] = main_field[i1 - 1][j1]  # take values from line above and till the top line
+                i1 -= 1
+            for j1 in range(0, field_size_n):
+                main_field[0][j1] = 0
+            if i + 1 <= field_size_m - 1:
+                i += 1
+        i -= 1
+    print_main_field_to_window()
 
 
 def end_game():
