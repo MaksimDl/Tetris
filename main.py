@@ -340,7 +340,7 @@ def end_game():
 
 def down_repeat():
     # while FALSE:
-    for i in range(0, 1000):
+    while True:
         time.sleep(1)
         print("Got 2nd thread to move fig down. name = ", threading.current_thread().name)
         go_down()
