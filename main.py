@@ -1,3 +1,4 @@
+import threading
 import tkinter as tk
 from tkinter import Label
 from tkinter import *
@@ -5,7 +6,7 @@ from PIL import ImageTk, Image
 import copy
 from random import randint
 import time
-import keyboard
+import threading
 
 sizeM = 1000  # size of window
 sizeN = 1000  # size of window
@@ -16,6 +17,7 @@ path_filled = "20f.png"  # busy cell
 x = 0  # position of begin cell of figure
 y = 0
 score = 0
+locker = threading.Lock()
 
 window = tk.Tk()
 window.title("Tetris Test")
@@ -58,7 +60,7 @@ def figure_calibrate(flag_check=0):
     if flag_check != 1:
         print_fig_over_field(0)
     end = time.time()
-    print("calibrate method takes :", (end - start) * 10 ** 3, "ms")
+    # print("calibrate method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def go_rotate():
@@ -84,13 +86,15 @@ def go_rotate():
         print_fig_over_field(0)  # print rotated figure to screen
     del temp
     end = time.time()
-    print("rotate method takes :", (end - start) * 10 ** 3, "ms")
+    # print("rotate method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def go_down():
     global x
     global y
+
     start = time.time()
+    locker.acquire()
     print_fig_over_field(1)  # remove figure in previous position before mooving
     x += 1
     if check_out_of_border() == 1 or check_for_crash_fig() == 1:
@@ -100,8 +104,9 @@ def go_down():
         stack_the_figure()
     else:
         print_fig_over_field(0)
+    locker.release()
     end = time.time()
-    print("go down method takes :", (end - start) * 10 ** 3, "ms")
+    # print("go down method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def go_up():  # for testing puprposes only -  wil not go in future. not checking!
@@ -118,11 +123,10 @@ def go_up():  # for testing puprposes only -  wil not go in future. not checking
         print_fig_over_field(0)
         # stack_the_figure And reWrite the field! (our figure is already erased)
     end = time.time()
-    print("go up method takes :", (end - start) * 10 ** 3, "ms")
+    # print("go up method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def go_right():
-    # check if can add!
     global x
     global y
     start = time.time()
@@ -135,7 +139,7 @@ def go_right():
         print_fig_over_field(0)
         # stack_the_figure And reWrite the field! (our figure is already erased)
     end = time.time()
-    print("go right method takes :", (end - start) * 10 ** 3, "ms")
+    # print("go right method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def go_left():
@@ -152,7 +156,7 @@ def go_left():
         print_fig_over_field(0)
         # stack_the_figure And reWrite the field! (our figure is already erased)
     end = time.time()
-    print("go left method takes :", (end - start) * 10 ** 3, "ms")
+    # print("go left method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def com(event):
@@ -170,7 +174,7 @@ def com(event):
         go_rotate()
     # left right down and up!
     end = time.time()
-    print("com method takes :", (end - start) * 10 ** 3, "ms")
+    # print("com method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def get_figure():  # here will be random generated several figures. for right now - one
@@ -203,7 +207,7 @@ def get_figure():  # here will be random generated several figures. for right no
                 end_game()
     end = time.time()
 
-    print("get figure method takes :", (end - start) * 10 ** 3, "ms")
+    # print("get figure method takes :", (end - start) * 10 ** 3, "ms")
     return 1
 
 
@@ -217,10 +221,10 @@ def check_out_of_border():
                 if x + i >= field_size_m or y + j >= field_size_n:
                     #  out of border (right or down)
                     end = time.time()
-                    print("check out of border(return 1) method takes :", (end - start) * 10 ** 3, "ms")
+                    # print("check out of border(return 1) method takes :", (end - start) * 10 ** 3, "ms")
                     return 1
     end = time.time()
-    print("check out of border(return 0) method takes :", (end - start) * 10 ** 3, "ms")
+    # print("check out of border(return 0) method takes :", (end - start) * 10 ** 3, "ms")
     return 0
 
 
@@ -230,10 +234,10 @@ def check_for_crash_fig():
         for j in range(y, y + 4):
             if figure[i - x][j - y] == 1 and main_field[i][j] == 1:
                 end = time.time()
-                print("check for crash (return 1) method takes :", (end - start) * 10 ** 3, "ms")
+                # print("check for crash (return 1) method takes :", (end - start) * 10 ** 3, "ms")
                 return 1  # figure gets on any busy cell of field
     end = time.time()
-    print("check for crash (return 0) method takes :", (end - start) * 10 ** 3, "ms")
+    # print("check for crash (return 0) method takes :", (end - start) * 10 ** 3, "ms")
     return 0  # everything OK
 
 
@@ -258,11 +262,12 @@ def print_main_field_to_window():
     label['text'] = score
     label.grid(row=field_size_m + 3, column=2, columnspan=2)
     end = time.time()
-    print("print_main_field method takes :", (end - start) * 10 ** 3, "ms")
+    # print("print_main_field method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def print_fig_over_field(clear):
     start = time.time()
+    print("_____________x, y =", x, y)
     if clear == 0:
         for i in range(x, x + 4):
             for j in range(y, y + 4):
@@ -278,7 +283,7 @@ def print_fig_over_field(clear):
                     label['image'] = image_empty
                     label.grid(row=x + (i - x), column=y + (j - y), ipadx=0, ipady=0, padx=0, pady=0)
     end = time.time()
-    print("fig_over_field method takes :", (end - start) * 10 ** 3, "ms")
+    # print("fig_over_field method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def stack_the_figure():
@@ -291,7 +296,7 @@ def stack_the_figure():
     clear_full_lines()
     get_figure()
     end = time.time()
-    print("stack figure (after 2 other methods) method takes :", (end - start) * 10 ** 3, "ms")
+    # print("stack figure (after 2 other methods) method takes :", (end - start) * 10 ** 3, "ms")
 
 
 def clear_full_lines():
@@ -324,7 +329,7 @@ def clear_full_lines():
                 i += 1
         i -= 1
     end = time.time()
-    print("clear_full_lines method takes :", (end - start) * 10 ** 3, "ms")
+    # print("clear_full_lines method takes :", (end - start) * 10 ** 3, "ms")
     print_main_field_to_window()
 
 
@@ -333,29 +338,41 @@ def end_game():
     # print big picture! LOOSE
 
 
-# init main field where empty and stacked cells will be stored. MxN size
-main_field = [0] * field_size_m
-for i in range(0, field_size_m):
-    main_field[i] = [0] * field_size_n
+def down_repeat():
+    # while FALSE:
+    for i in range(0, 1000):
+        time.sleep(1)
+        print("Got 2nd thread to move fig down. name = ", threading.current_thread().name)
+        go_down()
 
-# generate array for current figure(empty now). Supposed to be 4x4
-figure = [0] * 4
-for i in range(0, 4):
-    figure[i] = [0] * 4
 
-# for i in range(0, 4):
-#    for j in range(0, 4):
-#        print(figure[i][j], end=' ')
-#    print()
+def test():
+    i = 0
+    while i < 20:
+        print(i, end=" ")
+        print(threading.current_thread().name)
+        i += 1
 
-# main_field[1][2] = 1
 
-print_main_field_to_window()
+if __name__ == '__main__':
+    # init main field where empty and stacked cells will be stored. MxN size
+    main_field = [0] * field_size_m
+    for i in range(0, field_size_m):
+        main_field[i] = [0] * field_size_n
 
-get_figure()
+    # generate array for current figure(empty now). Supposed to be 4x4
+    figure = [0] * 4
+    for i in range(0, 4):
+        figure[i] = [0] * 4
 
-print_fig_over_field(0)
+    print_main_field_to_window()
 
-window.bind("<Key>", com)
+    get_figure()
 
-window.mainloop()
+    print_fig_over_field(0)
+    window.bind("<Key>", com)
+
+    thread2 = threading.Thread(target=down_repeat, daemon=True, args=(), name="thr-2")
+    thread2.start()
+
+    window.mainloop()
