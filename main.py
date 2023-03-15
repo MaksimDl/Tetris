@@ -27,6 +27,8 @@ window.configure(background='grey')
 window.resizable(False, False)
 image_empty = ImageTk.PhotoImage(Image.open(path_empty))
 image_filled = ImageTk.PhotoImage(Image.open(path_filled))
+flag_2func = 0
+flag_1func = 0
 
 
 def figure_calibrate(flag_check=0):
@@ -94,7 +96,7 @@ def go_down():
     global y
 
     start = time.time()
-    locker.acquire()
+
     print_fig_over_field(1)  # remove figure in previous position before mooving
     x += 1
     if check_out_of_border() == 1 or check_for_crash_fig() == 1:
@@ -104,7 +106,7 @@ def go_down():
         stack_the_figure()
     else:
         print_fig_over_field(0)
-    locker.release()
+
     end = time.time()
     # print("go down method takes :", (end - start) * 10 ** 3, "ms")
 
@@ -159,19 +161,76 @@ def go_left():
     # print("go left method takes :", (end - start) * 10 ** 3, "ms")
 
 
+def stuck():  # something went wrong
+    global x
+    global y
+    global flag_1func
+    print("something went wrong!")
+    print("x, y = ", x, y)
+    for i in range(0, 4):
+        for j in range(0, 4):
+            print(figure[i][j], end=' ')
+        print()
+    flag_1func = 1
+    print_main_field_to_window()
+    get_figure()
+    print_fig_over_field(0)
+
+
 def com(event):
+    global flag_1func
+    global flag_2func
+    count = 0
     # print("нажата клавиша",event.keysym)
     start = time.time()
+    if event.keysym == "q":
+        stuck()
     if event.keysym == "Down":
-        go_down()
-    if event.keysym == "Up":
-        go_up()
+        while flag_2func == 1:
+            count += 1
+            if count > 500:
+                flag_2func = 0  # waited to long
+                print("second func stuck?")
+        else:
+            flag_1func = 1
+            go_down()
+            flag_1func = 0
+
+    # if event.keysym == "Up":  - disabled
+    #    go_up()
     if event.keysym == "Left":
-        go_left()
+        while flag_2func == 1:
+            count += 1
+            if count > 500:
+                flag_2func = 0  # waited to long
+                print("second func stuck?")
+        else:
+            flag_1func = 1
+            go_left()
+            flag_1func = 0
+
     if event.keysym == "Right":
-        go_right()
+        while flag_2func == 1:
+            count += 1
+            if count > 500:
+                flag_2func = 0  # waited to long
+                print("second func stuck?")
+        else:
+            flag_1func = 1
+            go_right()
+            flag_1func = 0
+
     if event.keysym == "space":
-        go_rotate()
+        while flag_2func == 1:
+            count += 1
+            if count > 500:
+                flag_2func = 0  # waited to long
+                print("second func stuck?")
+        else:
+            flag_1func = 1
+            go_rotate()
+            flag_1func = 0
+
     # left right down and up!
     end = time.time()
     # print("com method takes :", (end - start) * 10 ** 3, "ms")
@@ -188,7 +247,7 @@ def get_figure():  # here will be random generated several figures. for right no
     for i in range(0, 4):
         for j in range(0, 4):
             figure[i][j] = 0
-    choose = randint(0, 4)
+    choose = randint(0, 6)
     if choose == 0:
         figure = [[1, 1, 1, 1], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     if choose == 1:
@@ -199,6 +258,10 @@ def get_figure():  # here will be random generated several figures. for right no
         figure = [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     if choose == 4:
         figure = [[1, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]]
+    if choose == 5:
+        figure = [[1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    if choose == 6:
+        figure = [[0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     figure_calibrate()
     # if appear already on busy field - game finishes!
     for i in range(x, x + 4):
@@ -213,6 +276,7 @@ def get_figure():  # here will be random generated several figures. for right no
 
 def check_out_of_border():
     start = time.time()
+
     if x < 0 or y < 0:
         return 1
     for i in range(0, 4):
@@ -267,8 +331,13 @@ def print_main_field_to_window():
 
 def print_fig_over_field(clear):
     start = time.time()
-    print("_____________x, y =", x, y)
+    global x
+    global y
+
     if clear == 0:
+        if x >= field_size_m or y >= field_size_n or x < 0 or y < 0:
+            x = 0  # if something went wrong....
+            y = 0
         for i in range(x, x + 4):
             for j in range(y, y + 4):
                 if figure[i - x][j - y] == 1:
@@ -278,10 +347,12 @@ def print_fig_over_field(clear):
     elif clear == 1:
         for i in range(x, x + 4):
             for j in range(y, y + 4):
+                if i - x < 0 or i - x > 3 or j - y < 0 or j - y > 3: print("debug i-x, j - y:  ", i - x, j - y)
                 if figure[i - x][j - y] == 1:
                     label = Label()
                     label['image'] = image_empty
                     label.grid(row=x + (i - x), column=y + (j - y), ipadx=0, ipady=0, padx=0, pady=0)
+
     end = time.time()
     # print("fig_over_field method takes :", (end - start) * 10 ** 3, "ms")
 
@@ -289,12 +360,14 @@ def print_fig_over_field(clear):
 def stack_the_figure():
     global main_field
     start = time.time()
+
     for i in range(x, x + 4):
         for j in range(y, y + 4):
             if figure[i - x][j - y] == 1:
                 main_field[i][j] = 1
     clear_full_lines()
     get_figure()
+
     end = time.time()
     # print("stack figure (after 2 other methods) method takes :", (end - start) * 10 ** 3, "ms")
 
@@ -339,11 +412,23 @@ def end_game():
 
 
 def down_repeat():
-    # while FALSE:
+    global flag_2func
+    global flag_1func
     while True:
         time.sleep(1)
-        print("Got 2nd thread to move fig down. name = ", threading.current_thread().name)
-        go_down()
+
+        # print("Got 2nd thread to move fig down. name = ", threading.current_thread().name)
+        count = 0
+        while flag_1func == 1:
+            count += 1
+            time.sleep(0.001)
+            if count > 500:
+                flag_1func = 0  # waited to long
+                print("first func stuck?")
+        else:
+            flag_2func = 1
+            go_down()
+            flag_2func = 0
 
 
 def test():
